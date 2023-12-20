@@ -17,6 +17,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
+import '../app/views/keys.dart';
 import '../core/state.dart';
 
 class ResponsiveDialog extends StatefulWidget {
@@ -86,6 +87,7 @@ class _ResponsiveDialogState extends State<ResponsiveDialog> {
       ),
       actions: [
         TextButton(
+          key: cancelButton,
           child: Text(cancelText),
           onPressed: () {
             widget.onCancel?.call();

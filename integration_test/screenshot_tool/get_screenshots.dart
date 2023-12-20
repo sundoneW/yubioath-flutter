@@ -23,8 +23,9 @@ import 'package:integration_test/integration_test.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:yubico_authenticator/app/views/keys.dart';
 import 'package:yubico_authenticator/desktop/init.dart';
+import 'package:yubico_authenticator/fido/keys.dart';
 
-ScreenshotController controller = ScreenshotController();
+var controller = ScreenshotController();
 
 int screenshotNum = 0;
 
@@ -37,8 +38,8 @@ String screenshotOutputDir =
 
 extension TakeScreenshot on WidgetTester {
   Future<void> tapAndTake(Key tap, String description,
-      {Duration delayAfterTap = Duration.zero}) async {
-    await tapKey(tap, delayAfterTap);
+      {int delayMs = 0}) async {
+    await tapKey(tap, Duration(milliseconds: delayMs));
     await takeScreenshot(description);
   }
 
@@ -47,10 +48,12 @@ extension TakeScreenshot on WidgetTester {
     if (delay != Duration.zero) {
       await pump(delay);
     }
+    await pumpAndSettle();
   }
 
   Future<void> closeDialog() async {
     await tapAt(const Offset(0, 0));
+    await pumpAndSettle();
   }
 
   Future<void> takeScreenshot(String description) async {
@@ -108,24 +111,50 @@ void main() {
         .writeAsString(script.join('\n'));
   });
 
-  startScreenshotSession('Initialization', (WidgetTester tester) async {
-    await tester.takeScreenshot('Startup screen');
+  startScreenshotSession('Initialization', (t) async {
+    await t.takeScreenshot('Startup screen');
+    await t.pumpAndSettle();
   });
 
-  startScreenshotSession('About', (WidgetTester tester) async {
-    await tester.tapAndTake(helpDrawerIcon, 'Dialog');
-    await tester.tapAndTake(logChip, 'Click `Copy log` feedback');
-    await tester.tapAndTake(diagnosticsChip, 'Click `Diagnostics` feedback');
-    await tester.tapAndTake(
+  startScreenshotSession('About', (t) async {
+    await t.tapAndTake(helpDrawerIcon, 'Dialog');
+    await t.tapAndTake(logChip, 'Click `Copy log` feedback', delayMs: 2000);
+    await t.tapAndTake(diagnosticsChip, 'Click `Diagnostics` feedback',
+        delayMs: 2000);
+    await t.tapAndTake(
       logLevelsChip,
       'Click `Log levels`',
-      delayAfterTap: const Duration(milliseconds: 100),
+      delayMs: 500,
     );
-    await tester.closeDialog();
+    await t.closeDialog();
   });
 
-  startScreenshotSession('Settings', (WidgetTester tester) async {
-    await tester.tapAndTake(settingDrawerIcon, 'Dialog');
-    await tester.closeDialog();
+  startScreenshotSession('Settings', (t) async {
+    await t.tapAndTake(settingDrawerIcon, 'Dialog');
+    await t.tapAndTake(themeModeSetting, 'Available themes');
+    await t.closeDialog();
+  });
+
+  startScreenshotSession('WebAuthn', (t) async {
+    await t.tapAndTake(fidoAppDrawer, 'FIDO view');
+    await t.tapAndTake(actionsIconButtonKey, 'Configure view');
+    await t.tapAndTake(managePinAction, 'Manage PIN dialog');
+    await t.enterText(find.byKey(pinPukField), '1234567');
+    await t.pumpAndSettle();
+    // write something in the other fields to enable the save button
+    await t.enterText(find.byKey(newPinPukField), '11111111');
+    await t.pumpAndSettle();
+    await t.enterText(find.byKey(confirmPinPukField), '11111111');
+    await t.pumpAndSettle();
+    await t.tapAndTake(saveButton, 'Wrong PIN');
+    await t.enterText(find.byKey(newPinPukField), '111');
+    await t.pumpAndSettle();
+    await t.enterText(find.byKey(confirmPinPukField), '111');
+    await t.pumpAndSettle();
+    await t.tapAndTake(saveButton, 'Short new PIN');
+    await t.tapKey(cancelButton);
+    await t.tapKey(actionsIconButtonKey);
+    await t.tapAndTake(resetAction, 'Reset dialog');
+    await t.closeDialog();
   });
 }
