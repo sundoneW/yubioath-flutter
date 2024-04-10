@@ -3,5 +3,8 @@
         "activityBar.background": "#B38D54",
         "titleBar.activeBackground": "#FFFFFF",
         "titleBar.activeForeground": "#FFFFFF"
-    }
+    },
+    "workbench.commandPalette.experimental.suggestCommands": true,
+    "workbench.experimental.cloudChanges.partialMatches.enabled": true,
+    "application.experimental.rendererProfiling": true
 }
